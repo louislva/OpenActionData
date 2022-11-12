@@ -30,33 +30,3 @@ chrome.runtime.onInstalled.addListener(async () => {
     // console.log(`Created tab ${tab.id}`);
 });
 
-function recordPage() {
-    document.body.style.backgroundColor = "#0000FF";
-
-    // Inject the "inject.js" script from the extension into the current page.
-   
-}
-
-chrome.action.onClicked.addListener((tab) => {
-    if (tab && tab.url && !tab.url.includes("chrome://") && tab.id) {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: recordPage,
-        });
-    }
-});
-
-// Do it on every page load
-// chrome.webNavigation.onBeforeNavigate.addListener((details) => {
-chrome.webNavigation.onCompleted.addListener((details) => {
-    if (details.tabId) {
-        // chrome.scripting.executeScript({
-        //     target: { tabId: details.tabId },
-        //     func: recordPage,
-        // });
-        chrome.scripting.executeScript({
-            files: ["js/inject.js"],
-            target: { tabId: details.tabId },
-        });
-    }
-});

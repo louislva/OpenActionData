@@ -14,5 +14,16 @@
   "host_permissions": [
     "*://*/*"
   ],
-  "action": {}
+  "action": {},
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/*"
+      ],
+      "css": [],
+      "js": [
+        "js/inject.js"
+      ]
+    }
+  ]
 }
