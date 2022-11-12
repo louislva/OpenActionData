@@ -1,0 +1,17 @@
+{
+  "name": "typescript-chrome-extension",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "@types/chrome": "^0.0.200",
+    "typescript": "^4.8.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "author": "",
+  "license": "MIT"
+}

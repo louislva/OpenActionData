@@ -1,9 +1,9 @@
 {
-  "name": "Hello, World!",
+  "name": "Love Typescript",
   "version": "1.0",
   "manifest_version": 3,
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/background.js"
   },
   "permissions": [
     "activeTab",
