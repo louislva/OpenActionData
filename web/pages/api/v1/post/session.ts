@@ -8,11 +8,11 @@ export default async function handler(
     res: NextApiResponse
 ) {
     const body = req.body;
-
-    console.log("saving");
-    console.log(body.originalUrl);
+   
+    const hostname = body?.originalUrl?.match(/https?:\/\/([^/]+)/)?.[1]?.replace(/\W+/g, "_");
+    const filename = Date.now().toString() + "-" + hostname + ".json";
     
-    await fsPromises.writeFile(path.join(process.cwd(), "data", body.tabId + "-" + body.createdOn + ".json"), JSON.stringify(body, null, 2));
+    await fsPromises.writeFile(path.join(process.cwd(), "data", filename), JSON.stringify(body, null, 2));
 
     res.status(200).end();
 }
