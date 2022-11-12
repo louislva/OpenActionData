@@ -1,9 +1,9 @@
-const rrweb = require('rrweb');
+const rrweb = require("rrweb");
 
-console.log("Injected + imported", Object.keys(rrweb || {}));
-
-rrweb.record({
-    emit(event: any) {
-        console.log(event);
-    },
-});
+(() => {
+    const stopRecording = rrweb.record({
+        emit(event: any) {
+            chrome.runtime.sendMessage({type: "event", data: event});
+        },
+    });
+})();
