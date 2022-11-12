@@ -42,3 +42,14 @@ chrome.action.onClicked.addListener((tab) => {
         });
     }
 });
+
+// Do it on every page load
+// chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+chrome.webNavigation.onCompleted.addListener((details) => {
+    if (details.tabId) {
+        chrome.scripting.executeScript({
+            target: { tabId: details.tabId },
+            func: reddenPage,
+        });
+    }
+});

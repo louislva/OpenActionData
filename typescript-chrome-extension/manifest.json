@@ -7,7 +7,12 @@
   },
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "webNavigation",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*/*"
   ],
   "action": {}
 }
