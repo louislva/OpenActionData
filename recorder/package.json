@@ -1,5 +1,5 @@
 {
-  "name": "typescript-chrome-extension",
+  "name": "open-action-data-recorder",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,5 +13,8 @@
     "dev": "tsc -w"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "rrweb": "^2.0.0-alpha.3"
+  }
 }
