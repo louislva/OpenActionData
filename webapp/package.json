@@ -17,8 +17,13 @@
     "eslint-config-next": "13.0.3",
     "next": "13.0.3",
     "node-uuid": "^1.4.8",
+    "pg-promise": "^10.12.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "typescript": "4.8.4"
+    "typescript": "4.8.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^8.3.4"
   }
 }

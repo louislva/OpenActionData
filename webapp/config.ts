@@ -1,0 +1,4 @@
+export default {
+    MAX_SESSIONS_PER_IP_PER_DAY: 100,
+    MAX_SESSION_FILE_SIZE: 10 * 1024 * 1024, // 10 MB
+}
