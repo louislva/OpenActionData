@@ -1,0 +1,42 @@
+/* import Raleway (locally) */
+@font-face {
+    src: url('/Raleway.ttf');
+    font-family: 'Raleway';
+    font-style: normal;
+}
+@font-face {
+    src: url('/Raleway-Italic.ttf');
+    font-family: 'Raleway';
+    font-style: italic;
+}
+@font-face {
+    src: url('/KellySlab-Regular.ttf');
+    font-family: 'Kelly Slab';
+    font-style: normal;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    /* apply font-sans */
+    @apply font-sans;
+}
+
+.unselectable {
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+}
+.selectable {
+    user-select: all;
+    -moz-user-select: all;
+    -khtml-user-select: all;
+    -webkit-user-select: all;
+    -o-user-select: all;
+}
