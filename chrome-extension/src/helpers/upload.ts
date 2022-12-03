@@ -1,9 +1,3 @@
-import config from "../config";
-import sendStringToPresignedPost from "./sendStringToPresignedPost";
-import { V1PostSessionRequestBodyType } from "../shared";
-import { QueuedSessionType } from "./sessionQueue";
-
-
 function generateRandomToken() {
     // E.g. 8 * 32 = 256 bits token
     var randomPool = new Uint8Array(32);

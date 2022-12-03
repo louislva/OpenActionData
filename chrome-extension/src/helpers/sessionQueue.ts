@@ -2,6 +2,7 @@ import config from "../config";
 import { RecordingType } from "./recording";
 
 export type QueuedSessionType = {
+    uuid: string;
     metadata: {
         tabId: number;
         startTs: number;
@@ -13,11 +14,8 @@ export type QueuedSessionType = {
 
 export function queueSessionForReview(session: QueuedSessionType): Promise<void> {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get(["sessionQueue"], function (result) {
-            if (chrome.runtime.lastError)
-                return reject(chrome.runtime.lastError);
-
-            let sessionQueue = JSON.parse(result.sessionQueue || "[]").slice(
+        getSessionQueue().then((queue) => {
+            const sessionQueue = queue.slice(
                 -config.maxSessionQueueSize
             );
             sessionQueue.push(session);

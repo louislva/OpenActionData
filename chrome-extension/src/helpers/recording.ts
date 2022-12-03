@@ -1,4 +1,5 @@
 import { QueuedSessionType, queueSessionForReview } from "./sessionQueue";
+import { v4 as uuidv4 } from 'uuid';
 
 export type RecordingType = {
     createdOn: number;
@@ -21,6 +22,7 @@ async function concludePreviousTabSession(tabId: number) {
         const maxTimestamp = Math.max(...timestamps);
 
         const session: QueuedSessionType = {
+            uuid: uuidv4(),
             metadata: {
                 tabId: recording.tabId,
                 startTs: minTimestamp,

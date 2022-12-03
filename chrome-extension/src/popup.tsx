@@ -1,7 +1,9 @@
 import moment from "moment";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { getSessionQueue, QueuedSessionType } from "./helpers/sessionQueue";
+import rrwebPlayer from "rrweb-player";
+import "rrweb-player/dist/style.css";
 
 function extractSessionDisplayData(data: QueuedSessionType): string | null {
     try {
@@ -66,42 +68,6 @@ function extractSessionDisplayData(data: QueuedSessionType): string | null {
 }
 
 const Popup = () => {
-    const [count, setCount] = useState(0);
-    const [currentURL, setCurrentURL] = useState<string>();
-
-    useEffect(() => {
-        chrome.action.setBadgeText({ text: count.toString() });
-    }, [count]);
-
-    useEffect(() => {
-        chrome.tabs.query(
-            { active: true, currentWindow: true },
-            function (tabs) {
-                setCurrentURL(tabs[0].url);
-            }
-        );
-    }, []);
-
-    const changeBackground = () => {
-        chrome.tabs.query(
-            { active: true, currentWindow: true },
-            function (tabs) {
-                const tab = tabs[0];
-                if (tab.id) {
-                    chrome.tabs.sendMessage(
-                        tab.id,
-                        {
-                            color: "#555555",
-                        },
-                        (msg) => {
-                            console.log("result message:", msg);
-                        }
-                    );
-                }
-            }
-        );
-    };
-
     const [sessionQueue, setSessionQueue] = useState<
         QueuedSessionType[] | null
     >(null);
@@ -114,6 +80,13 @@ const Popup = () => {
         const count = sessionQueue?.length || 0;
         chrome.action.setBadgeText({ text: count ? count.toString() : "" });
     }, [sessionQueue?.length]);
+
+    const [openedSessionUuid, setOpenedSessionUuid] = useState<string | null>(
+        null
+    );
+    const openedSession = sessionQueue?.find(
+        (item) => item.uuid === openedSessionUuid
+    );
 
     return (
         <div className="flex flex-col w-full h-full bg-gray-50">
@@ -128,6 +101,77 @@ const Popup = () => {
                     </h1>
                 </div>
             </div>
+            {openedSession ? (
+                <SessionPage openedSession={openedSession} />
+            ) : (
+                <ListPage
+                    sessionQueue={sessionQueue}
+                    openQueuedSession={(session: QueuedSessionType) => {
+                        console.log({ session });
+
+                        setOpenedSessionUuid(session.uuid);
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+const SessionPage = (props: { openedSession: QueuedSessionType }) => {
+    const { openedSession } = props;
+    const replayFrameRef = useRef<HTMLIFrameElement>(null);
+
+    useEffect(() => {
+        if (replayFrameRef.current) {
+            // when the iframe is loaded, we can start replaying the recording
+            replayFrameRef.current.onload = () => {
+                const html =
+                    replayFrameRef.current?.contentDocument?.documentElement;
+                // delete body, otherwise it renders weird
+                html?.removeChild(html?.lastChild!);
+
+                // Show the rrweb player!
+                new rrwebPlayer({
+                    // @ts-ignore
+                    target: html,
+                    props: {
+                        events: openedSession.recording.events,
+                        width: replayFrameRef.current?.clientWidth,
+                        height:
+                            (replayFrameRef.current?.clientHeight || 200) - 80,
+                    },
+                });
+            };
+        }
+    }, []);
+
+    return (
+        <div className="flex-1 pt-8 px-12">
+            <h2 className="text-4xl mb-2">Review anonymized recording</h2>
+            <p className="text-base mb-2">
+                Our bot has erased every mention of your personally identifiable
+                details it could find. The values it looks for are: your name,
+                phone number, email address, any password, and more. It’s not
+                flawless however, so make sure to double check:
+            </p>
+            <iframe
+                src="replay.html"
+                allowFullScreen
+                className="w-full h-screen overflow-hidden rounded-md shadow-lg mb-2"
+                ref={replayFrameRef}
+            />
+        </div>
+    );
+};
+
+const ListPage = (props: {
+    sessionQueue: QueuedSessionType[] | null;
+    openQueuedSession: (session: QueuedSessionType) => void;
+}) => {
+    const { sessionQueue, openQueuedSession } = props;
+
+    return (
+        <>
             {sessionQueue && sessionQueue.length > 0 ? (
                 <div className="flex-1 pt-8 px-12">
                     <h2 className="text-4xl mb-8">
@@ -145,7 +189,9 @@ const Popup = () => {
                                 key={item.metadata.startTs}
                                 className="w-full h-18 mb-4 rounded-3xl bg-white border-gray-300 border flex flex-row items-center unselectable cursor-pointer"
                                 onClick={() => {
-                                    setCount(count + 1);
+                                    console.log("TOOO");
+
+                                    openQueuedSession(item);
                                 }}
                             >
                                 <div className="w-10 h-10 rounded-lg border border-gray-300 ml-6 flex justify-center items-center">
@@ -180,7 +226,7 @@ const Popup = () => {
             ) : (
                 <div className="flex-1 text-4xl">Nothing to see</div>
             )}
-        </div>
+        </>
     );
 };
 
