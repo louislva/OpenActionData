@@ -1,7 +1,7 @@
 import moment from "moment";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { getSessionQueue, QueuedSessionType } from "./helpers/sessionQueue";
+import { deleteSessionByUuid, getSessionQueue, QueuedSessionType } from "./helpers/sessionQueue";
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
 
@@ -68,14 +68,13 @@ function extractSessionDisplayData(data: QueuedSessionType): string | null {
 }
 
 const Popup = () => {
-    const [sessionQueue, setSessionQueue] = useState<
+    const [_sessionQueue, setSessionQueue] = useState<
         QueuedSessionType[] | null
     >(null);
-    useEffect(() => {
-        getSessionQueue().then((queue) => {
-            setSessionQueue(queue);
-        });
-    }, []);
+    const sessionQueue = useMemo(
+        () => _sessionQueue?.reverse() || null,
+        [_sessionQueue]
+    );
     useEffect(() => {
         const count = sessionQueue?.length || 0;
         chrome.action.setBadgeText({ text: count ? count.toString() : "" });
@@ -88,9 +87,17 @@ const Popup = () => {
         (item) => item.uuid === openedSessionUuid
     );
 
+    useEffect(() => {
+        getSessionQueue().then((queue) => {
+            setSessionQueue(queue);
+        });
+    }, [!!openedSession]);
+
     return (
         <div className="flex flex-col w-full h-full bg-gray-50">
-            <div className="w-full h-16 border-gray-300 border-b bg-white">
+            <div className="w-full h-16 border-gray-300 border-b bg-white cursor-pointer" onClick={() => {
+                setOpenedSessionUuid(null);
+            }}>
                 <div className="flex flex-row justify-center items-center unselectable">
                     <img
                         src="/logo-72x72.png"
@@ -102,7 +109,17 @@ const Popup = () => {
                 </div>
             </div>
             {openedSession ? (
-                <SessionPage openedSession={openedSession} />
+                <SessionPage
+                    openedSession={openedSession}
+                    reject={async () => {
+                        // TODO: error handling
+                        await deleteSessionByUuid(openedSession.uuid);
+                        setOpenedSessionUuid(null);
+                    }}
+                    submit={() => {
+                        setOpenedSessionUuid(null);
+                    }}
+                />
             ) : (
                 <ListPage
                     sessionQueue={sessionQueue}
@@ -117,8 +134,12 @@ const Popup = () => {
     );
 };
 
-const SessionPage = (props: { openedSession: QueuedSessionType }) => {
-    const { openedSession } = props;
+const SessionPage = (props: {
+    openedSession: QueuedSessionType;
+    reject: () => void;
+    submit: () => void;
+}) => {
+    const { openedSession, reject, submit } = props;
     const replayFrameRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
@@ -154,12 +175,36 @@ const SessionPage = (props: { openedSession: QueuedSessionType }) => {
                 phone number, email address, any password, and more. It’s not
                 flawless however, so make sure to double check:
             </p>
-            <iframe
-                src="replay.html"
-                allowFullScreen
-                className="w-full h-screen overflow-hidden rounded-md shadow-lg mb-2"
-                ref={replayFrameRef}
-            />
+            <div className="w-full h-screen py-8">
+                <iframe
+                    src="replay.html"
+                    allowFullScreen
+                    className="w-full h-full overflow-hidden rounded-md shadow-lg mb-4"
+                    ref={replayFrameRef}
+                />
+            </div>
+            <div className="flex flex-row justify-end mb-4">
+                <button
+                    className="bg-white border-2 border-red-500 text-red-500 text-lg font-bold py-2 pr-4 pl-3 rounded-lg flex flex-row items-center"
+                    onClick={() => {
+                        reject();
+                    }}
+                >
+                    <div className="material-icons mr-2 text-base">delete</div>
+                    Delete
+                </button>
+                <button
+                    className="bg-white border-2 border-teal-500 text-teal-500 text-lg font-bold py-2 pl-4 pr-3 rounded-lg flex flex-row items-center ml-2"
+                    onClick={() => {
+                        submit();
+                    }}
+                >
+                    Next
+                    <div className="material-icons ml-2 text-base">
+                        arrow_forward
+                    </div>
+                </button>
+            </div>
         </div>
     );
 };
@@ -172,7 +217,7 @@ const ListPage = (props: {
 
     return (
         <>
-            {sessionQueue && sessionQueue.length > 0 ? (
+            {sessionQueue ? sessionQueue.length > 0 ? (
                 <div className="flex-1 pt-8 px-12">
                     <h2 className="text-4xl mb-8">
                         We've identified{" "}
@@ -182,7 +227,7 @@ const ListPage = (props: {
                         that could be useful for OpenActionData
                     </h2>
                     {sessionQueue.map((item) => {
-                        const title = extractSessionDisplayData(item);
+                        const title = extractSessionDisplayData(item)?.trim();
 
                         return (
                             <div
@@ -224,7 +269,9 @@ const ListPage = (props: {
                     })}
                 </div>
             ) : (
-                <div className="flex-1 text-4xl">Nothing to see</div>
+                <div className="flex justify-center items-center flex-1 text-2xl">Nothing to see yet.</div>
+            ) : (
+                <div className="flex justify-center items-center flex-1 text-2xl">Loading...</div>
             )}
         </>
     );
