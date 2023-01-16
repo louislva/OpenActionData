@@ -1,19 +1,22 @@
-import { QueuedSessionType, queueSessionForReview } from "./sessionQueue";
+import { SessionType, queueSessionForReview } from "./sessionQueue";
 import { v4 as uuidv4 } from 'uuid';
 
-export type RecordingType = {
+type ActiveRecordingType = {
     createdOn: number;
     tabId: number;
     events: any[];
 };
+export type RecordingType = ActiveRecordingType & {
+    uuid: string;
+}
 
 let activeTabRecordings: {
-    [tabId: string]: RecordingType;
+    [tabId: string]: ActiveRecordingType;
 } = {};
 
 async function concludePreviousTabSession(tabId: number) {
     // TODO: save to file
-    const recording: RecordingType = activeTabRecordings[tabId] || null;
+    const recording: ActiveRecordingType = activeTabRecordings[tabId] || null;
 
     console.log("Ending session", recording);
     if (recording) {
@@ -21,7 +24,7 @@ async function concludePreviousTabSession(tabId: number) {
         const minTimestamp = Math.min(...timestamps);
         const maxTimestamp = Math.max(...timestamps);
 
-        const session: QueuedSessionType = {
+        const session: SessionType = {
             uuid: uuidv4(),
             metadata: {
                 tabId: recording.tabId,
@@ -29,10 +32,9 @@ async function concludePreviousTabSession(tabId: number) {
                 endTs: maxTimestamp,
                 descriptionUser: null,
             },
-            recording,
         };
 
-        await queueSessionForReview(session);
+        await queueSessionForReview(session, {...recording, uuid: session.uuid});
 
         delete activeTabRecordings[tabId];
     }
@@ -66,9 +68,9 @@ export function startRecordingDaemon() {
         if (request?.type === "event") {
             if (sender.tab?.id) {
                 const tabId = sender.tab.id;
-                const session: RecordingType =
+                const recording: ActiveRecordingType =
                     activeTabRecordings[tabId] || null;
-                if (session) session.events.push(request.data);
+                if (recording) recording.events.push(request.data);
             }
         }
     });

@@ -3,50 +3,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import {
     deleteSessionByUuid,
-    getSessionQueue,
-    QueuedSessionType,
+    getQueue,
+    SessionType,
 } from "./helpers/sessionQueue";
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
 import { RecordingType } from "./helpers/recording";
 
-// const extractSessionDisplayDataFast = (data: QueuedSessionType): string | null => {
-//     try {
-//         for(let i = recording.events.length - 1; i >= 0; i--) {
-//             const event = recording.events[i];
-//             if (event.type === 4) {
-//             } else if (event.type === 3) {
-//                 const addedTitle = event?.data?.adds?.find(
-//                     (item: any) => item?.node?.tagName === "title"
-//                 );
-//                 if (addedTitle) {
-//                     return addedTitle?.childNodes?.[0]?.textContent;
-//                 }
-//             } else if (event.type === 2) {
-//                 const title = event?.data?.node?.childNodes
-//                     ?.find((item: any) => item?.tagName === "html")
-//                     ?.childNodes?.find(
-//                         (item: any) => item?.tagName === "head"
-//                     )
-//                     ?.childNodes?.find(
-//                         (item: any) => item?.tagName === "title"
-//                     );
-
-//                 if (title) {
-//                     return title?.childNodes?.[0]?.textContent;
-//                 }
-//             }
-//         }
-//         return null;
-//     } catch (e) {
-//         console.error(e);
-//         return null;
-//     }
-// }
-
 const Popup = () => {
     const [_sessionQueue, setSessionQueue] = useState<
-        QueuedSessionType[] | null
+        SessionType[] | null
     >(null);
     const sessionQueue = useMemo(
         () => _sessionQueue?.reverse() || null,
@@ -65,13 +31,23 @@ const Popup = () => {
     );
 
     useEffect(() => {
-        getSessionQueue().then((queue) => {
+        getQueue("sessionQueue").then((queue: SessionType[]) => {
             setSessionQueue(queue);
         });
     }, [!!openedSession]);
 
-    // @ts-ignore
-    const openedSessionRecording = openedSession?.recording;
+    const [openedSessionRecording, setOpenedSessionRecording] =
+        useState<null | RecordingType>(null);
+    useEffect(() => {
+        if (openedSession?.uuid) {
+            getQueue("recordingQueue").then((queue: RecordingType[]) => {
+                const recording = queue.find(
+                    (item) => item.uuid === openedSession.uuid
+                );
+                if (recording) setOpenedSessionRecording(recording);
+            });
+        }
+    }, [openedSession?.uuid]);
 
     return (
         <div className="flex flex-col w-full h-full bg-gray-50">
@@ -107,7 +83,7 @@ const Popup = () => {
             ) : (
                 <ListPage
                     sessionQueue={sessionQueue}
-                    openQueuedSession={(session: QueuedSessionType) => {
+                    openQueuedSession={(session: SessionType) => {
                         console.log({ session });
 
                         setOpenedSessionUuid(session.uuid);
@@ -119,8 +95,8 @@ const Popup = () => {
 };
 
 const SessionPage = (props: {
-    openedSession: QueuedSessionType;
-    openedSessionRecording: RecordingType;
+    openedSession: SessionType;
+    openedSessionRecording: RecordingType | null;
     reject: () => void;
     submit: () => void;
 }) => {
@@ -128,7 +104,7 @@ const SessionPage = (props: {
     const replayFrameRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
-        if (replayFrameRef.current) {
+        if (replayFrameRef.current && openedSessionRecording) {
             // when the iframe is loaded, we can start replaying the recording
             replayFrameRef.current.onload = () => {
                 const html =
@@ -149,9 +125,9 @@ const SessionPage = (props: {
                 });
             };
         }
-    }, []);
+    }, [!!openedSessionRecording]);
 
-    return (
+    return openedSessionRecording ? (
         <div className="flex-1 pt-8 px-12">
             <h2 className="text-4xl mb-2">Review anonymized recording</h2>
             <p className="text-base mb-2">
@@ -191,12 +167,16 @@ const SessionPage = (props: {
                 </button>
             </div>
         </div>
+    ) : (
+        <div className="flex justify-center items-center flex-1 text-2xl">
+            Loading...
+        </div>
     );
 };
 
 const ListPage = (props: {
-    sessionQueue: QueuedSessionType[] | null;
-    openQueuedSession: (session: QueuedSessionType) => void;
+    sessionQueue: SessionType[] | null;
+    openQueuedSession: (session: SessionType) => void;
 }) => {
     const { sessionQueue, openQueuedSession } = props;
 
@@ -248,7 +228,9 @@ const ListPage = (props: {
                                         openQueuedSession(item);
                                     }}
                                 >
-                                    <div className={`w-10 h-10 rounded-lg ${color} ml-6 flex justify-center items-center`}>
+                                    <div
+                                        className={`w-10 h-10 rounded-lg ${color} ml-6 flex justify-center items-center`}
+                                    >
                                         {/* <img
                                             // TODO: extract favicon
                                             src="/icon.png"

@@ -28,7 +28,7 @@ function getUserToken(): Promise<string> {
     });
 }
 
-// async function uploadQueuedSession(session: QueuedSessionType): Promise<void> {
+// async function uploadQueuedSession(session: SessionType): Promise<void> {
 //     const body: V1PostSessionRequestBodyType = {
 //         session: session.metadata,
 //         userToken: await getUserToken(),
