@@ -12,3 +12,15 @@ Check [the issues](https://github.com/louislva/OpenActionData/issues) to find so
 
 - [`chrome-extension`](https://github.com/louislva/OpenActionData/tree/master/chrome-extension): A chrome extension with rrweb (library for recording sessions of DOM changes) & react installed
 - [`mock-backend`](https://github.com/louislva/OpenActionData/tree/master/mock-backend): A mock backend for the chrome extension, which just saves the data to a file
+
+## Development environment
+
+In `chrome-extension`:
+
+1. Install dependencies with `npm install`
+2. Run `npm run watch` and `npm run watch-tailwind` in separate terminals
+
+In `webapp`:
+
+1. Install dependencies with `npm install`
+2. Run `npm run dev`
