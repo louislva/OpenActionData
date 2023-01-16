@@ -1,7 +1,7 @@
 import { RecordingType } from "./recording";
 import { SessionType } from "./sessionQueue";
 
-function extractSessionDisplayData(
+export default function extractSessionDisplayData(
     data: SessionType,
     recording: RecordingType
 ): string | null {

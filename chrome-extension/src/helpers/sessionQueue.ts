@@ -1,6 +1,7 @@
 import config from "../config";
 import { RecordingType } from "./recording";
 
+// TYPES
 export type SessionType = {
     uuid: string;
     metadata: {
@@ -12,23 +13,7 @@ export type SessionType = {
     };
 };
 
-export function queueSessionForReview(
-    session: SessionType,
-    recording: RecordingType
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        getQueue("sessionQueue").then((queue: SessionType[]) => {
-            const sessionQueue = queue.slice(-config.maxSessionQueueSize);
-            sessionQueue.push(session);
-            saveQueue("sessionQueue", sessionQueue).then(resolve).catch(reject);
-        });
-        getQueue("recordingQueue").then((queue: RecordingType[]) => {
-            const recordingQueue = queue.slice(-config.maxSessionQueueSize);
-            recordingQueue.push(recording);
-            saveQueue("recordingQueue", recordingQueue).then(resolve).catch(reject);
-        });
-    });
-}
+// GENERAL HELPERS
 export function getQueue(key: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
         chrome.storage.local.get([key], function (result) {
@@ -45,6 +30,25 @@ export function saveQueue(key: string, value: any[]): Promise<void> {
             if (chrome.runtime.lastError)
                 return reject(chrome.runtime.lastError);
             resolve();
+        });
+    });
+}
+
+// METHODS
+export function queueSessionForReview(
+    session: SessionType,
+    recording: RecordingType
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        getQueue("sessionQueue").then((queue: SessionType[]) => {
+            const sessionQueue = queue.slice(-config.maxSessionQueueSize);
+            sessionQueue.push(session);
+            saveQueue("sessionQueue", sessionQueue).then(resolve).catch(reject);
+        });
+        getQueue("recordingQueue").then((queue: RecordingType[]) => {
+            const recordingQueue = queue.slice(-config.maxSessionQueueSize);
+            recordingQueue.push(recording);
+            saveQueue("recordingQueue", recordingQueue).then(resolve).catch(reject);
         });
     });
 }

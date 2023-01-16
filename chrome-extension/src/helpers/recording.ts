@@ -1,5 +1,6 @@
 import { SessionType, queueSessionForReview } from "./sessionQueue";
 import { v4 as uuidv4 } from 'uuid';
+import extractSessionDisplayData from "./extractSessionDisplayData";
 
 type ActiveRecordingType = {
     createdOn: number;
@@ -24,7 +25,7 @@ async function concludePreviousTabSession(tabId: number) {
         const minTimestamp = Math.min(...timestamps);
         const maxTimestamp = Math.max(...timestamps);
 
-        const session: SessionType = {
+        let session: SessionType = {
             uuid: uuidv4(),
             metadata: {
                 tabId: recording.tabId,
@@ -33,8 +34,14 @@ async function concludePreviousTabSession(tabId: number) {
                 descriptionUser: null,
             },
         };
+        const recordingWithUuid: RecordingType = {
+            ...recording,
+            uuid: session.uuid
+        };
+        const inferredTitle = extractSessionDisplayData(session, recordingWithUuid);
+        if(inferredTitle) session.metadata.inferredTitle = inferredTitle;
 
-        await queueSessionForReview(session, {...recording, uuid: session.uuid});
+        await queueSessionForReview(session, recordingWithUuid);
 
         delete activeTabRecordings[tabId];
     }
