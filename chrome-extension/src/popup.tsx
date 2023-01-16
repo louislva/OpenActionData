@@ -1,71 +1,48 @@
 import moment from "moment";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { deleteSessionByUuid, getSessionQueue, QueuedSessionType } from "./helpers/sessionQueue";
+import {
+    deleteSessionByUuid,
+    getSessionQueue,
+    QueuedSessionType,
+} from "./helpers/sessionQueue";
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
+import { RecordingType } from "./helpers/recording";
 
-function extractSessionDisplayData(data: QueuedSessionType): string | null {
-    try {
-        const titleExtractions = data.recording.events
-            .reduce((acc: any[], item) => {
-                if (item.type === 4 || acc.length === 0) {
-                    acc.push([]);
-                }
-                console.log(acc[acc.length - 1]);
-                acc[acc.length - 1].push(item);
-                return acc;
-            }, [])
-            .map((events: any[]) => {
-                let titles = [];
-                for (let i = 0; i < events.length; i++) {
-                    const event = events[i];
-                    if (event.type === 4) {
-                    } else if (event.type === 3) {
-                        const addedTitle = event?.data?.adds?.find(
-                            (item: any) => item?.node?.tagName === "title"
-                        );
-                        if (addedTitle) {
-                            titles.push([addedTitle, event.timestamp, 3]);
-                        }
-                    } else if (event.type === 2) {
-                        const title = event?.data?.node?.childNodes
-                            ?.find((item: any) => item?.tagName === "html")
-                            ?.childNodes?.find(
-                                (item: any) => item?.tagName === "head"
-                            )
-                            ?.childNodes?.find(
-                                (item: any) => item?.tagName === "title"
-                            );
+// const extractSessionDisplayDataFast = (data: QueuedSessionType): string | null => {
+//     try {
+//         for(let i = recording.events.length - 1; i >= 0; i--) {
+//             const event = recording.events[i];
+//             if (event.type === 4) {
+//             } else if (event.type === 3) {
+//                 const addedTitle = event?.data?.adds?.find(
+//                     (item: any) => item?.node?.tagName === "title"
+//                 );
+//                 if (addedTitle) {
+//                     return addedTitle?.childNodes?.[0]?.textContent;
+//                 }
+//             } else if (event.type === 2) {
+//                 const title = event?.data?.node?.childNodes
+//                     ?.find((item: any) => item?.tagName === "html")
+//                     ?.childNodes?.find(
+//                         (item: any) => item?.tagName === "head"
+//                     )
+//                     ?.childNodes?.find(
+//                         (item: any) => item?.tagName === "title"
+//                     );
 
-                        titles.push([title, event.timestamp, 2]);
-                    }
-                }
-
-                return titles;
-            })
-            .flat();
-
-        const titles = titleExtractions.map(
-            ([titleObj, titleTs, titleSourceType], index: number) => {
-                const title = titleObj?.childNodes?.[0]?.textContent;
-                const duration =
-                    index === titleExtractions.length - 1
-                        ? data.metadata.endTs - titleTs
-                        : titleExtractions[index + 1][1] - titleTs;
-
-                return [title, duration];
-            }
-        );
-
-        return titles.slice().sort((a: any, b: any) => {
-            return b[1] - a[1];
-        })[0][0];
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
-}
+//                 if (title) {
+//                     return title?.childNodes?.[0]?.textContent;
+//                 }
+//             }
+//         }
+//         return null;
+//     } catch (e) {
+//         console.error(e);
+//         return null;
+//     }
+// }
 
 const Popup = () => {
     const [_sessionQueue, setSessionQueue] = useState<
@@ -93,11 +70,17 @@ const Popup = () => {
         });
     }, [!!openedSession]);
 
+    // @ts-ignore
+    const openedSessionRecording = openedSession?.recording;
+
     return (
         <div className="flex flex-col w-full h-full bg-gray-50">
-            <div className="w-full h-16 border-gray-300 border-b bg-white cursor-pointer" onClick={() => {
-                setOpenedSessionUuid(null);
-            }}>
+            <div
+                className="w-full h-16 border-gray-300 border-b bg-white cursor-pointer"
+                onClick={() => {
+                    setOpenedSessionUuid(null);
+                }}
+            >
                 <div className="flex flex-row justify-center items-center unselectable">
                     <img
                         src="/logo-72x72.png"
@@ -111,6 +94,7 @@ const Popup = () => {
             {openedSession ? (
                 <SessionPage
                     openedSession={openedSession}
+                    openedSessionRecording={openedSessionRecording}
                     reject={async () => {
                         // TODO: error handling
                         await deleteSessionByUuid(openedSession.uuid);
@@ -136,10 +120,11 @@ const Popup = () => {
 
 const SessionPage = (props: {
     openedSession: QueuedSessionType;
+    openedSessionRecording: RecordingType;
     reject: () => void;
     submit: () => void;
 }) => {
-    const { openedSession, reject, submit } = props;
+    const { openedSession, openedSessionRecording, reject, submit } = props;
     const replayFrameRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
@@ -156,7 +141,7 @@ const SessionPage = (props: {
                     // @ts-ignore
                     target: html,
                     props: {
-                        events: openedSession.recording.events,
+                        events: openedSessionRecording.events,
                         width: replayFrameRef.current?.clientWidth,
                         height:
                             (replayFrameRef.current?.clientHeight || 200) - 80,
@@ -217,61 +202,94 @@ const ListPage = (props: {
 
     return (
         <>
-            {sessionQueue ? sessionQueue.length > 0 ? (
-                <div className="flex-1 pt-8 px-12">
-                    <h2 className="text-4xl mb-8">
-                        We've identified{" "}
-                        <span className="text-teal-500 font-semibold">
-                            {sessionQueue.length} sessions
-                        </span>{" "}
-                        that could be useful for OpenActionData
-                    </h2>
-                    {sessionQueue.map((item) => {
-                        const title = extractSessionDisplayData(item)?.trim();
+            {sessionQueue ? (
+                sessionQueue.length > 0 ? (
+                    <div className="flex-1 pt-8 px-12">
+                        <h2 className="text-4xl mb-8">
+                            We've identified{" "}
+                            <span className="text-teal-500 font-semibold">
+                                {sessionQueue.length} sessions
+                            </span>{" "}
+                            that could be useful for OpenActionData
+                        </h2>
+                        {sessionQueue.map((item, index) => {
+                            const title =
+                                item.metadata.inferredTitle ||
+                                "Unidentified session | " +
+                                    moment(item.metadata.startTs).calendar();
 
-                        return (
-                            <div
-                                key={item.metadata.startTs}
-                                className="w-full h-18 mb-4 rounded-3xl bg-white border-gray-300 border flex flex-row items-center unselectable cursor-pointer"
-                                onClick={() => {
-                                    console.log("TOOO");
+                            const palette = [
+                                "bg-red-200",
+                                "bg-orange-200",
+                                "bg-yellow-200",
+                                "bg-lime-200",
+                                "bg-green-200",
+                                "bg-emerald-200",
+                                "bg-teal-200",
+                                "bg-cyan-200",
+                                "bg-sky-200",
+                                "bg-blue-200",
+                                "bg-indigo-200",
+                                "bg-violet-200",
+                                "bg-purple-200",
+                                "bg-fuchsia-200",
+                                "bg-pink-200",
+                                "bg-rose-200",
+                            ];
+                            const color = palette[index % palette.length];
 
-                                    openQueuedSession(item);
-                                }}
-                            >
-                                <div className="w-10 h-10 rounded-lg border border-gray-300 ml-6 flex justify-center items-center">
-                                    <img
-                                        // TODO: extract favicon
-                                        src="/icon.png"
-                                        className="w-8 h-8 rounded"
-                                    />
-                                </div>
-                                <div className="flex flex-col h-10 justify-around flex-1 ml-4">
-                                    <div className="text-base leading-none">
-                                        {title}
+                            return (
+                                <div
+                                    key={item.metadata.startTs}
+                                    className="w-full h-18 mb-4 rounded-3xl bg-white border-gray-300 border flex flex-row items-center unselectable cursor-pointer"
+                                    onClick={() => {
+                                        console.log("TOOO");
+
+                                        openQueuedSession(item);
+                                    }}
+                                >
+                                    <div className={`w-10 h-10 rounded-lg ${color} ml-6 flex justify-center items-center`}>
+                                        {/* <img
+                                            // TODO: extract favicon
+                                            src="/icon.png"
+                                            className="w-8 h-8 rounded"
+                                        /> */}
                                     </div>
-                                    <div className="text-base leading-none text-gray-400">
-                                        {/* Nov 19, 12:54 - 13:58 */}
-                                        {moment(
-                                            new Date(item.metadata.startTs || 0)
-                                        ).format("MMM D, HH:mm")}{" "}
-                                        -{" "}
-                                        {moment(
-                                            new Date(item.metadata.endTs || 0)
-                                        ).format("HH:mm")}
+                                    <div className="flex flex-col h-10 justify-around flex-1 ml-4">
+                                        <div className="text-base leading-none">
+                                            {title}
+                                        </div>
+                                        <div className="text-base leading-none text-gray-400">
+                                            {/* Nov 19, 12:54 - 13:58 */}
+                                            {moment(
+                                                new Date(
+                                                    item.metadata.startTs || 0
+                                                )
+                                            ).format("MMM D, HH:mm")}{" "}
+                                            -{" "}
+                                            {moment(
+                                                new Date(
+                                                    item.metadata.endTs || 0
+                                                )
+                                            ).format("HH:mm")}
+                                        </div>
+                                    </div>
+                                    <div className="material-icons mr-6">
+                                        arrow_forward
                                     </div>
                                 </div>
-                                <div className="material-icons mr-6">
-                                    arrow_forward
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="flex justify-center items-center flex-1 text-2xl">
+                        Nothing to see yet.
+                    </div>
+                )
+            ) : (
+                <div className="flex justify-center items-center flex-1 text-2xl">
+                    Loading...
                 </div>
-            ) : (
-                <div className="flex justify-center items-center flex-1 text-2xl">Nothing to see yet.</div>
-            ) : (
-                <div className="flex justify-center items-center flex-1 text-2xl">Loading...</div>
             )}
         </>
     );
