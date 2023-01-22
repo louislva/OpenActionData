@@ -41,12 +41,14 @@ export function queueSessionForReview(
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         getQueue("sessionQueue").then((queue: SessionType[]) => {
-            const sessionQueue = queue.slice(-config.maxSessionQueueSize);
+            const sessionQueue = queue.slice(-(config.maxSessionQueueSize - 1));
             sessionQueue.push(session);
             saveQueue("sessionQueue", sessionQueue).then(resolve).catch(reject);
         });
         getQueue("recordingQueue").then((queue: RecordingType[]) => {
-            const recordingQueue = queue.slice(-config.maxSessionQueueSize);
+            const recordingQueue = queue.slice(
+                -(config.maxSessionQueueSize - 1)
+            );
             recordingQueue.push(recording);
             saveQueue("recordingQueue", recordingQueue)
                 .then(resolve)

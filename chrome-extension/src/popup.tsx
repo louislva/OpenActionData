@@ -9,11 +9,12 @@ import {
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
 import { RecordingType } from "./helpers/recording";
+import { uploadQueuedSession } from "./helpers/upload";
 
 const Popup = () => {
-    const [_sessionQueue, setSessionQueue] = useState<
-        SessionType[] | null
-    >(null);
+    const [_sessionQueue, setSessionQueue] = useState<SessionType[] | null>(
+        null
+    );
     const sessionQueue = useMemo(
         () => _sessionQueue?.reverse() || null,
         [_sessionQueue]
@@ -77,8 +78,17 @@ const Popup = () => {
                         await deleteSessionByUuid(openedSession.uuid);
                         setOpenedSessionUuid(null);
                     }}
-                    submit={() => {
-                        setOpenedSessionUuid(null);
+                    submit={async (description: string) => {
+                        if (openedSession && openedSessionRecording) {
+                            await uploadQueuedSession(
+                                openedSession,
+                                openedSessionRecording,
+                                description
+                            );
+                            setOpenedSessionUuid(null);
+                        } else {
+                            // TODO: sentry
+                        }
                     }}
                 />
             ) : (
@@ -95,17 +105,12 @@ const Popup = () => {
     );
 };
 
-const SessionPage = (props: {
-    openedSession: SessionType;
-    openedSessionRecording: RecordingType | null;
-    reject: () => void;
-    submit: () => void;
-}) => {
-    const { openedSession, openedSessionRecording, reject, submit } = props;
+const ReplayRecording = (props: { recording: RecordingType }) => {
+    const { recording } = props;
     const replayFrameRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
-        if (replayFrameRef.current && openedSessionRecording) {
+        if (replayFrameRef.current && recording) {
             // when the iframe is loaded, we can start replaying the recording
             replayFrameRef.current.onload = () => {
                 const html =
@@ -114,60 +119,127 @@ const SessionPage = (props: {
                 html?.removeChild(html?.lastChild!);
 
                 // Show the rrweb player!
-                new rrwebPlayer({
+                const rrPlayer = new rrwebPlayer({
                     // @ts-ignore
                     target: html,
                     props: {
-                        events: openedSessionRecording.events,
+                        events: recording.events,
                         width: replayFrameRef.current?.clientWidth,
                         height:
                             (replayFrameRef.current?.clientHeight || 200) - 80,
                     },
                 });
+                return () => {
+                    rrPlayer.pause();
+                };
             };
         }
-    }, [!!openedSessionRecording]);
+    }, [!!recording]);
+
+    return (
+        <iframe
+            src="replay.html"
+            allowFullScreen
+            className="w-full h-full overflow-hidden rounded-md shadow-lg mb-4"
+            ref={replayFrameRef}
+        />
+    );
+};
+
+const SessionPage = (props: {
+    openedSession: SessionType;
+    openedSessionRecording: RecordingType | null;
+    reject: () => void;
+    submit: (description: string) => Promise<void>;
+}) => {
+    const { openedSession, openedSessionRecording, reject, submit } = props;
+    const [page, setPage] = useState<"0-review" | "1-description">("0-review");
+    const [description, setDescription] = useState<string>("");
+    const [submitting, setSubmitting] = useState<boolean>(false);
 
     return openedSessionRecording ? (
-        <div className="flex-1 pt-8 px-12">
-            <h2 className="text-4xl mb-2">Review anonymized recording</h2>
-            <p className="text-base mb-2">
-                Our bot has erased every mention of your personally identifiable
-                details it could find. The values it looks for are: your name,
-                phone number, email address, any password, and more. It’s not
-                flawless however, so make sure to double check:
-            </p>
-            <div className="w-full h-screen py-8">
-                <iframe
-                    src="replay.html"
-                    allowFullScreen
-                    className="w-full h-full overflow-hidden rounded-md shadow-lg mb-4"
-                    ref={replayFrameRef}
-                />
+        page === "0-review" ? (
+            <div className="flex-1 pt-8 px-12">
+                <h2 className="text-4xl mb-2">Review anonymized recording</h2>
+                <p className="text-base mb-2">
+                    Our bot has erased every mention of your personally
+                    identifiable details it could find. The values it looks for
+                    are: your name, phone number, email address, any password,
+                    and more. It’s not flawless however, so make sure to double
+                    check:
+                </p>
+                <div className="w-full h-screen py-8">
+                    <ReplayRecording recording={openedSessionRecording} />
+                </div>
+                <div className="flex flex-row justify-between mb-10">
+                    <button
+                        className="bg-white border-2 border-zinc-500 text-zinc-500 text-base py-2 px-3 rounded-lg flex flex-row items-center"
+                        onClick={() => {
+                            reject();
+                        }}
+                    >
+                        <div className="material-icons mr-2 text-xl">
+                            delete
+                        </div>
+                        Delete
+                    </button>
+                    <button
+                        className="bg-white border-2 border-teal-500 text-teal-500 text-base py-2 px-3 rounded-lg flex flex-row items-center justify-center w-24"
+                        onClick={() => {
+                            setPage("1-description");
+                        }}
+                    >
+                        Next
+                        <div className="material-icons ml-2 text-xl">
+                            arrow_forward
+                        </div>
+                    </button>
+                </div>
             </div>
-            <div className="flex flex-row justify-end mb-4">
-                <button
-                    className="bg-white border-2 border-red-500 text-red-500 text-lg font-bold py-2 pr-4 pl-3 rounded-lg flex flex-row items-center"
-                    onClick={() => {
-                        reject();
-                    }}
-                >
-                    <div className="material-icons mr-2 text-base">delete</div>
-                    Delete
-                </button>
-                <button
-                    className="bg-white border-2 border-teal-500 text-teal-500 text-lg font-bold py-2 pl-4 pr-3 rounded-lg flex flex-row items-center ml-2"
-                    onClick={() => {
-                        submit();
-                    }}
-                >
-                    Next
-                    <div className="material-icons ml-2 text-base">
-                        arrow_forward
+        ) : (
+            <div className="flex-1 pt-8 px-12 flex flex-col">
+                <h2 className="text-4xl mb-2">
+                    Write a description (optional)
+                </h2>
+                <p className="text-base mb-4">
+                    If you wanted an AI assistant to do the same as you did,
+                    what would you tell it?
+                </p>
+                <div className="flex-1">
+                    <textarea
+                        className="w-96 h-36 bg-white border border-zinc-300 rounded-lg mb-4 text-base p-4 resize-none"
+                        placeholder="Go to Facebook and wish my grandmother a happy birthday... Approve Geoffrey’s pull request on Github... Send my boss a good excuse for being late..."
+                        onChange={(e) => {
+                            setDescription(e.target.value);
+                        }}
+                        value={description}
+                    />
+                </div>
+                <div className="flex flex-row items-center mb-10">
+                    <div className="flex-1 text-base pr-2">
+                        By pressing “Submit!” you acknowledge that you’re
+                        entering this recording into the public domain, and
+                        loose all rights bla bla bla.
                     </div>
-                </button>
+                    <button
+                        className={
+                            (submitting ? "bg-teal-500/70" : "bg-teal-500") +
+                            " text-white text-base py-3 px-4 rounded-lg flex flex-row items-center ml-2 justify-center w-24"
+                        }
+                        onClick={async () => {
+                            // TODO: try / catch + sentry + error message
+                            if (!submitting) {
+                                setSubmitting(true);
+                                await submit(description).catch(() => null);
+                                setSubmitting(false);
+                            }
+                        }}
+                    >
+                        {submitting ? "..." : "Submit!"}
+                    </button>
+                </div>
             </div>
-        </div>
+        )
     ) : (
         <div className="flex justify-center items-center flex-1 text-2xl">
             Loading...
