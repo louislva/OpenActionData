@@ -1,4 +1,8 @@
-import { SessionType, queueSessionForReview } from "./sessionQueue";
+import {
+    SessionType,
+    queueSessionForReview,
+    getQueueCount,
+} from "./sessionQueue";
 import { v4 as uuidv4 } from "uuid";
 import extractSessionDisplayData from "./extractSessionDisplayData";
 
@@ -44,8 +48,11 @@ async function concludePreviousTabSession(tabId: number, cause: "closed-tab") {
         if (inferredTitle) session.metadata.inferredTitle = inferredTitle;
 
         await queueSessionForReview(session, recordingWithUuid);
-
         delete activeTabRecordings[tabId];
+
+        getQueueCount().then((count) =>
+            chrome.action.setBadgeText({ text: count ? count.toString() : "" })
+        );
     }
 }
 async function startNewTabSession(tabId: number, originalUrl: string) {
@@ -67,7 +74,7 @@ export function startRecordingDaemon() {
             if (!activeTabRecordings[details.tabId]) {
                 // Try to start recording
                 await startNewTabSession(details.tabId, details.url);
-            }else{
+            } else {
                 // TODO: is rrweb already recording the manual URL changes? because the model should learn to "commit" new urls to the search bar
             }
         }

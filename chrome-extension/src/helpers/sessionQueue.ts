@@ -91,3 +91,10 @@ export function deleteSessionByUuid(uuid: string): Promise<void> {
             .catch(() => null); // TODO: sentry
     });
 }
+export function getQueueCount(): Promise<number> {
+    return new Promise((resolve, reject) => {
+        getQueue("sessionQueue").then((queue: SessionType[]) => {
+            resolve(queue.length);
+        });
+    });
+}
