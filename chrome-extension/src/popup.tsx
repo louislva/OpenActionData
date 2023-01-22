@@ -52,7 +52,7 @@ const Popup = () => {
     }, [openedSession?.uuid]);
 
     return (
-        <div className="flex flex-col w-full h-full bg-gray-50">
+        <div className="flex flex-col w-full min-h-full bg-gray-50">
             <div
                 className="w-full h-16 border-gray-300 border-b bg-white cursor-pointer"
                 onClick={() => {
@@ -112,6 +112,7 @@ const ReplayRecording = (props: { recording: RecordingType }) => {
     useEffect(() => {
         if (replayFrameRef.current && recording) {
             // when the iframe is loaded, we can start replaying the recording
+            let rrPlayer: rrwebPlayer;
             replayFrameRef.current.onload = () => {
                 const html =
                     replayFrameRef.current?.contentDocument?.documentElement;
@@ -119,7 +120,7 @@ const ReplayRecording = (props: { recording: RecordingType }) => {
                 html?.removeChild(html?.lastChild!);
 
                 // Show the rrweb player!
-                const rrPlayer = new rrwebPlayer({
+                rrPlayer = new rrwebPlayer({
                     // @ts-ignore
                     target: html,
                     props: {
@@ -129,9 +130,9 @@ const ReplayRecording = (props: { recording: RecordingType }) => {
                             (replayFrameRef.current?.clientHeight || 200) - 80,
                     },
                 });
-                return () => {
-                    rrPlayer.pause();
-                };
+            };
+            return () => {
+                rrPlayer.pause();
             };
         }
     }, [!!recording]);
@@ -146,6 +147,46 @@ const ReplayRecording = (props: { recording: RecordingType }) => {
     );
 };
 
+const OADCheckbox = (props: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    text: string;
+}) => {
+    const { checked, onChange, text } = props;
+
+    // Custom styled checkbox
+    return (
+        <div
+            className="flex flex-row items-start cursor-pointer mb-3"
+            aria-role="checkbox"
+            onClick={() => {
+                onChange(!checked);
+            }}
+        >
+            <div
+                className={
+                    "mt-1 w-8 h-8 mr-2 flex flex-row items-center justify-center rounded-lg border-2 transition-all duration-200 " +
+                    (checked
+                        ? "border-teal-500 bg-teal-500 "
+                        : "border-gray-300 bg-transparent ")
+                }
+            >
+                <div
+                    className={
+                        "material-icons transition-all duration-200 " +
+                        (checked ? "text-white" : "text-transparent")
+                    }
+                >
+                    check
+                </div>
+            </div>
+            <div className="flex-1 text-gray-500 cursor-pointer text-base leading-tight">
+                {text}
+            </div>
+        </div>
+    );
+};
+
 const SessionPage = (props: {
     openedSession: SessionType;
     openedSessionRecording: RecordingType | null;
@@ -157,17 +198,28 @@ const SessionPage = (props: {
     const [description, setDescription] = useState<string>("");
     const [submitting, setSubmitting] = useState<boolean>(false);
 
+    const [disclaimer1, setDisclaimer1] = useState<boolean>(false);
+    const [disclaimer2, setDisclaimer2] = useState<boolean>(false);
+    const [disclaimer3, setDisclaimer3] = useState<boolean>(false);
+
+    const submitDisabled = !(disclaimer1 && disclaimer2 && disclaimer3);
+
     return openedSessionRecording ? (
         page === "0-review" ? (
             <div className="flex-1 pt-8 px-12">
-                <h2 className="text-4xl mb-2">Review anonymized recording</h2>
-                <p className="text-base mb-2">
-                    Our bot has erased every mention of your personally
-                    identifiable details it could find. The values it looks for
-                    are: your name, phone number, email address, any password,
-                    and more. It’s not flawless however, so make sure to double
-                    check:
-                </p>
+                <h2 className="text-4xl mb-2">Review recording</h2>
+                <div className="text-base mb-2 pt-2">
+                    Review the recording before submitting. Please press the
+                    'Delete' button if any of the following apply:
+                    <ul className="list-disc ml-4 mt-2">
+                        <li>
+                            the recording contains sensitive and/or personally
+                            identifiable information such as emails, names, or
+                            passwords
+                        </li>
+                        <li>the recording is of bad quality</li>
+                    </ul>
+                </div>
                 <div className="w-full h-screen py-8">
                     <ReplayRecording recording={openedSessionRecording} />
                 </div>
@@ -214,21 +266,55 @@ const SessionPage = (props: {
                         }}
                         value={description}
                     />
+                    <OADCheckbox
+                        checked={disclaimer1}
+                        onChange={() => {
+                            setDisclaimer1(!disclaimer1);
+                        }}
+                        text="I have full ownership of the data I'm submitting (defined as everything contained in data.json)"
+                    />
+                    <OADCheckbox
+                        checked={disclaimer2}
+                        onChange={() => {
+                            setDisclaimer2(!disclaimer2);
+                        }}
+                        text="I have reviewed the data I'm submitting, and it doesn't contain any sensitive or personally identifiable information"
+                    />
+                    <OADCheckbox
+                        checked={disclaimer3}
+                        onChange={() => {
+                            setDisclaimer3(!disclaimer3);
+                        }}
+                        text="I agree to the terms and conditions, and understand that I'm permanently & irrevocably submitting the data into the public domain, and thereby loosing all rights to it (including, but not limited to, the right to be forgotten under GDPR)"
+                    />
                 </div>
-                <div className="flex flex-row items-center mb-10">
-                    <div className="flex-1 text-base pr-2">
-                        By pressing “Submit!” you acknowledge that you’re
-                        entering this recording into the public domain, and
-                        loose all rights bla bla bla.
-                    </div>
+                <div className="flex flex-row justify-between mb-10">
+                    <button
+                        className="bg-white border-2 border-zinc-500 text-zinc-500 text-base py-2 px-3 rounded-lg flex flex-row items-center"
+                        onClick={() => {
+                            setDisclaimer1(false);
+                            setDisclaimer2(false);
+                            setDisclaimer3(false);
+                            setPage("0-review");
+                        }}
+                    >
+                        <div className="material-icons mr-2 text-xl">
+                            arrow_back
+                        </div>
+                        Back
+                    </button>
                     <button
                         className={
-                            (submitting ? "bg-teal-500/70" : "bg-teal-500") +
-                            " text-white text-base py-3 px-4 rounded-lg flex flex-row items-center ml-2 justify-center w-24"
+                            (submitDisabled
+                                ? "bg-zinc-300 cursor-default"
+                                : submitting
+                                ? "bg-teal-500/70 cursor-default"
+                                : "bg-teal-500 cursor-pointer") +
+                            " text-white text-base py-3 px-4 rounded-lg flex flex-row items-center ml-2 justify-center w-24 transition-all duration-200"
                         }
                         onClick={async () => {
                             // TODO: try / catch + sentry + error message
-                            if (!submitting) {
+                            if (!submitting && !submitDisabled) {
                                 setSubmitting(true);
                                 await submit(description).catch(() => null);
                                 setSubmitting(false);
