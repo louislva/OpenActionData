@@ -39,6 +39,7 @@ const Popup = () => {
     const [openedSessionRecording, setOpenedSessionRecording] =
         useState<null | RecordingType>(null);
     useEffect(() => {
+        setOpenedSessionRecording(null);
         if (openedSession?.uuid) {
             getQueue("recordingQueue").then((queue: RecordingType[]) => {
                 const recording = queue.find(
