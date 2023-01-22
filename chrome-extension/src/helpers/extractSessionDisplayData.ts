@@ -61,7 +61,8 @@ export default function extractSessionDisplayData(
             return b[1] - a[1];
         })[0][0];
     } catch (e) {
-        console.error(e);
+        console.error("Handled error:", e);
+        // TODO: sentry
         return null;
     }
 }
