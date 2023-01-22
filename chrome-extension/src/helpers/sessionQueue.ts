@@ -48,39 +48,46 @@ export function queueSessionForReview(
         getQueue("recordingQueue").then((queue: RecordingType[]) => {
             const recordingQueue = queue.slice(-config.maxSessionQueueSize);
             recordingQueue.push(recording);
-            saveQueue("recordingQueue", recordingQueue).then(resolve).catch(reject);
+            saveQueue("recordingQueue", recordingQueue)
+                .then(resolve)
+                .catch(reject);
         });
     });
 }
 export function deleteSessionByUuid(uuid: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        getQueue("sessionQueue").then((queue: SessionType[]) => {
-            const sessionQueue = queue.filter(
-                (session) => session.uuid !== uuid
-            );
-            const foundAndDeleted = sessionQueue.length === queue.length - 1;
-            if (!foundAndDeleted)
-                return reject(
-                    new Error(
-                        `Could not find session with uuid ${uuid} in session queue`
-                    )
+        getQueue("sessionQueue")
+            .then((queue: SessionType[]) => {
+                const sessionQueue = queue.filter(
+                    (session) => session.uuid !== uuid
                 );
-            saveQueue("sessionQueue", sessionQueue).then(resolve).catch(reject);
-        }).catch(() => null); // TODO: sentry
-        getQueue("recordingQueue").then((queue: RecordingType[]) => {
-            const recordingQueue = queue.filter(
-                (recording) => recording.uuid !== uuid
-            );
-            const foundAndDeleted = recordingQueue.length === queue.length - 1;
-            if (!foundAndDeleted)
-                return reject(
-                    new Error(
-                        `Could not find session with uuid ${uuid} in recording queue`
-                    )
+                const foundAndDeleted =
+                    sessionQueue.length === queue.length - 1;
+                if (!foundAndDeleted)
+                    return reject(
+                        new Error(
+                            `Could not find session with uuid ${uuid} in session queue`
+                        )
+                    );
+                return saveQueue("sessionQueue", sessionQueue);
+            })
+            .then(resolve)
+            .catch(() => null); // TODO: sentry
+        getQueue("recordingQueue")
+            .then((queue: RecordingType[]) => {
+                const recordingQueue = queue.filter(
+                    (recording) => recording.uuid !== uuid
                 );
-            saveQueue("recordingQueue", recordingQueue)
-                .then(resolve)
-                .catch(reject);
-        }).catch(() => null); // TODO: sentry
+                const foundAndDeleted =
+                    recordingQueue.length === queue.length - 1;
+                if (!foundAndDeleted)
+                    return reject(
+                        new Error(
+                            `Could not find session with uuid ${uuid} in recording queue`
+                        )
+                    );
+                return saveQueue("recordingQueue", recordingQueue);
+            })
+            .catch(() => null); // TODO: sentry
     });
 }
