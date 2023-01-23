@@ -1,5 +1,6 @@
 import config from "../config";
 import { V1PostSessionRequestBodyType } from "../shared";
+import { compressStringToBlob } from "./compression";
 import { RecordingType } from "./recording";
 import sendStringToPresignedPost from "./sendStringToPresignedPost";
 import { deleteSessionByUuid, SessionType } from "./sessionQueue";
@@ -60,7 +61,7 @@ export async function uploadQueuedSession(
         const backendResponseJson = await backendResponse.json();
         const presignedPostResponse = await sendStringToPresignedPost(
             backendResponseJson.presignedPost,
-            JSON.stringify(recording)
+            await compressStringToBlob(JSON.stringify(recording))
         );
         if (presignedPostResponse.status.toString().startsWith("2")) {
             await deleteSessionByUuid(session.uuid);

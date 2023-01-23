@@ -61,7 +61,7 @@ export default async function handler(
                     }
                 );
 
-                const key = uuidv4() + ".json";
+                const key = uuidv4() + ".json.gz";
 
                 const presignedPostPromise = createPresignedPost({
                     Bucket: process.env.S3_BUCKET as string,

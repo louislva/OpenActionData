@@ -2,7 +2,7 @@ import type AWS from "aws-sdk";
 
 export default (
     presignedPost: AWS.S3.PresignedPost,
-    content: string,
+    content: string | Blob,
 ): Promise<Response> => {
     // https://advancedweb.hu/how-to-use-s3-post-signed-urls/
     const formData = new FormData();
