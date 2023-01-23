@@ -347,7 +347,7 @@ const ListPage = (props: {
                         <h2 className="text-4xl mb-8">
                             We've identified{" "}
                             <span className="text-teal-500 font-semibold">
-                                {sessionQueue.length} sessions
+                                {sessionQueue.length} {sessionQueue.length === 1 ? "session" : "sessions"}
                             </span>{" "}
                             that could be useful for OpenActionData
                         </h2>
