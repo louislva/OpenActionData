@@ -1,8 +1,8 @@
 # OpenActionData
 
-Building a diverse, clean and safe dataset of humans using the web. Open source.
+Building a diverse & clean dataset of humans using the web. Open source.
 
-For training models similar to [ACT-1](https://www.adept.ai/act) or [WebGPT](https://openai.com/blog/webgpt/).
+For training models similar to [ACT-1](https://www.adept.ai/act), [WebGPT](https://openai.com/blog/webgpt/), or [DeepMind's Unnamed Thing](https://arxiv.org/abs/2202.08137).
 
 ## Contributing
 
