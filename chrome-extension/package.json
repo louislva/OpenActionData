@@ -18,6 +18,7 @@
     "moment": "^2.29.4",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
+    "react-json-view": "^1.21.3",
     "rrweb": "^2.0.0-alpha.3",
     "rrweb-player": "^1.0.0-alpha.4",
     "uuid": "^9.0.0"

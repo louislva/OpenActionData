@@ -150,7 +150,7 @@ const ReplayRecording = (props: { recording: RecordingType }) => {
 const OADCheckbox = (props: {
     checked: boolean;
     onChange: (checked: boolean) => void;
-    text: string;
+    text: string | JSX.Element;
 }) => {
     const { checked, onChange, text } = props;
 
@@ -184,6 +184,26 @@ const OADCheckbox = (props: {
                 {text}
             </div>
         </div>
+    );
+};
+const OADNewTabLink = (props: { href: string; children: string }) => {
+    const { href, children } = props;
+
+    return (
+        <a className="inline-flex flex-row items-center font-bold hover:text-black transition-all duration-100" target="_blank" rel="noreferrer" href={href}>
+            {children}
+            <span className="material-icons ml-0.5 text-sm mr-0.25" style={{
+                marginTop: '1.5px',
+            }}>open_in_new</span>
+        </a>
+    );
+};
+
+const getDataJsonUrl = (session: SessionType): string => {
+    return (
+        chrome.runtime.getURL("options.html") +
+        "?show=" +
+        encodeURIComponent(session.uuid)
     );
 };
 
@@ -271,7 +291,18 @@ const SessionPage = (props: {
                         onChange={() => {
                             setDisclaimer1(!disclaimer1);
                         }}
-                        text="I have full ownership of the data I'm submitting (defined as everything contained in data.json)"
+                        text={
+                            <>
+                                I have full ownership of the data I'm submitting
+                                (defined as everything contained in{" "}
+                                <OADNewTabLink
+                                    href={getDataJsonUrl(openedSession)}
+                                >
+                                    data.json
+                                </OADNewTabLink>
+                                )
+                            </>
+                        }
                     />
                     <OADCheckbox
                         checked={disclaimer2}
@@ -285,10 +316,10 @@ const SessionPage = (props: {
                         onChange={() => {
                             setDisclaimer3(!disclaimer3);
                         }}
-                        text="I agree to the terms and conditions, and understand that I'm permanently & irrevocably submitting the data into the public domain, and thereby loosing all rights to it (including, but not limited to, the right to be forgotten under GDPR)"
+                        text={<>I agree to the <OADNewTabLink href={chrome.runtime.getURL("privacy-policy.html")}>privacy policy</OADNewTabLink> and understand that I'm permanently & irrevocably submitting the data into the public domain, and thereby <u>loosing all rights</u> to it (including, but not limited to, the right to be forgotten under GDPR)</>}
                     />
                 </div>
-                <div className="flex flex-row justify-between mb-10">
+                <div className="flex flex-row justify-between mb-10 mt-4">
                     <button
                         className="bg-white border-2 border-zinc-500 text-zinc-500 text-base py-2 px-3 rounded-lg flex flex-row items-center"
                         onClick={() => {
@@ -347,7 +378,10 @@ const ListPage = (props: {
                         <h2 className="text-4xl mb-8">
                             We've identified{" "}
                             <span className="text-teal-500 font-semibold">
-                                {sessionQueue.length} {sessionQueue.length === 1 ? "session" : "sessions"}
+                                {sessionQueue.length}{" "}
+                                {sessionQueue.length === 1
+                                    ? "session"
+                                    : "sessions"}
                             </span>{" "}
                             that could be useful for OpenActionData
                         </h2>
