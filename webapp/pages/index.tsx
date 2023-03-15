@@ -51,8 +51,8 @@ function PartWhat() {
             <p>
               OpenActionData is a chrome-extension that identifies tasks that
               are hard for AIs to do. When it sees you doing one, it starts
-              recording your mouse-clicks and then asks for your permission to
-              upload them to a public dataset.
+              recording your session and then asks for your permission to upload
+              it to a public dataset.
             </p>
             <p>
               Every browsing session you upload will be consentual & manually
