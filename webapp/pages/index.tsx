@@ -1,12 +1,12 @@
-import Head from "next/head";
-import Link from "next/link";
-import NavBar from "../components/NavBar";
+import Head from 'next/head';
+import Link from 'next/link';
+import NavBar from '../components/NavBar';
 import {
   Card,
   SectionCards,
   SectionSide,
   TitleDivider,
-} from "../components/Website";
+} from '../components/Website';
 
 function InstallButton() {
   return (
@@ -31,7 +31,7 @@ function PartHero() {
         Help teach AIs to use computers
       </h1>
       <p className="max-w-md text-xl text-center mb-6">
-        OpenActionData is a chrome extension which asks for{" "}
+        OpenActionData is a chrome extension which asks for{' '}
         <b>2-5 screen recordings per day</b>. Before being uploaded, they're
         fully anonymized - and we'll never save anything without a review from
         you.
@@ -316,7 +316,7 @@ export default function Home() {
       </Head>
       <main
         className={
-          "font-dosis min-h-screen bg-stone-900 text-white flex flex-col items-center"
+          'font-dosis min-h-screen bg-stone-900 text-white flex flex-col items-center'
         }
       >
         <NavBar />
