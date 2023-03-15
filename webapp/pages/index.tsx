@@ -256,8 +256,8 @@ function PartTheRoadAhead() {
         }
       >
         <img
-          className="w-full h-72 rounded-xl object-contain invert"
-          src="/absurd/bricks.png"
+          className="w-full h-72 rounded-xl object-contain invert opacity-90"
+          src="/art/llm.png"
         />
       </SectionSide>
       <SectionSide
@@ -280,7 +280,7 @@ function PartTheRoadAhead() {
       >
         <img
           className="w-full h-72 rounded-xl object-contain invert"
-          src="/absurd/idea-drip.png"
+          src="/art/man-with-screen.png"
         />
       </SectionSide>
       <SectionSide
@@ -298,7 +298,7 @@ function PartTheRoadAhead() {
       >
         <img
           className="w-full h-72 rounded-xl object-contain invert"
-          src="/absurd/voting.png"
+          src="/art/voting.png"
         />
       </SectionSide>
     </>
