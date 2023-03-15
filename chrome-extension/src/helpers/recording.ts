@@ -10,6 +10,11 @@ type ActiveRecordingType = {
   createdOn: number;
   tabId: number;
   events: any[];
+  oadEvents: {
+    type: "click" | "hover";
+    timestamp: number;
+    xpath?: string;
+  }[];
 };
 export type RecordingType = ActiveRecordingType & {
   uuid: string;
@@ -59,6 +64,7 @@ async function startNewTabSession(tabId: number, originalUrl: string) {
       createdOn: Date.now(),
       tabId,
       events: [],
+      oadEvents: [],
     };
   }
 }
@@ -92,6 +98,25 @@ export function startRecordingDaemon() {
         const recording: ActiveRecordingType =
           activeTabRecordings[tabId] || null;
         if (recording) recording.events.push(request.data);
+      }
+    } else if (request?.type === "xpathEvent") {
+      const data = request.data as {
+        eventType: "click" | "hover";
+        xpath: string;
+        timestamp: number;
+      };
+
+      if (sender.tab?.id) {
+        const tabId = sender.tab.id;
+        const recording: ActiveRecordingType =
+          activeTabRecordings[tabId] || null;
+        if (recording) {
+          recording.oadEvents.push({
+            type: data.eventType,
+            timestamp: request.data.timestamp,
+            xpath: data.xpath,
+          });
+        }
       }
     }
   });
