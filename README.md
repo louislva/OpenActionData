@@ -11,7 +11,7 @@ Check [the issues](https://github.com/louislva/OpenActionData/issues) to find so
 ## Structure
 
 - [`chrome-extension`](https://github.com/louislva/OpenActionData/tree/master/chrome-extension): A chrome extension with rrweb (library for recording sessions of DOM changes) & react installed
-- [`mock-backend`](https://github.com/louislva/OpenActionData/tree/master/mock-backend): A mock backend for the chrome extension, which just saves the data to a file
+- [`webapp`](https://github.com/louislva/OpenActionData/tree/master/mock-backend): A Next.js app that implements the backend + landing page
 
 ## Development environment
 
